@@ -63,8 +63,9 @@ resSplit split(nodoArbolA *nodo){
     return retorno;
 }
 
-void insertar(nodoArbolA *nodos, par nuevo, int indiceAct, int *cantidadNodo, bool esRaiz){
+void insertar(nodoArbolA *nodos, par nuevo, int indiceAct, int *cantidadNodo, bool esRaiz, int * contadorIOs){
     nodoArbolA *actual = &nodos[indiceAct];
+    (*contadorIOs)++;
     if(actual->es_interno==0 && !esRaiz){
         int pos = actual->k-1;
         while(pos>=0 && actual->llaves_valores[pos].llave > nuevo.llave){
@@ -73,6 +74,7 @@ void insertar(nodoArbolA *nodos, par nuevo, int indiceAct, int *cantidadNodo, bo
         }
         actual->llaves_valores[pos+1] = nuevo;
         actual->k++;
+        (*contadorIOs)++;
     }
     else if(actual->es_interno==1 && !esRaiz){
         int donde = 0;
@@ -81,8 +83,9 @@ void insertar(nodoArbolA *nodos, par nuevo, int indiceAct, int *cantidadNodo, bo
         }
         int indiceHijo = actual->hijos[donde];
         nodoArbolA *hijo = &nodos[indiceHijo];
+        (*contadorIOs)++;
         if(hijo->k<340){ //caso que no este lleno
-            insertar(nodos, nuevo, indiceHijo, cantidadNodo, false);
+            insertar(nodos, nuevo, indiceHijo, cantidadNodo, false, contadorIOs);
         }
         else{ //caso si lleno
             //a)
@@ -97,7 +100,9 @@ void insertar(nodoArbolA *nodos, par nuevo, int indiceAct, int *cantidadNodo, bo
             actual->llaves_valores[pos+1] =result.mediano;
             //c)
             nodos[indiceHijo] = *result.izq;
-            nodos[*cantidadNodo] = *result.der; 
+            (*contadorIOs)++;
+            nodos[*cantidadNodo] = *result.der;
+            (*contadorIOs)++; 
             //d)
             for(int i = actual->k + 1; i> donde + 1; i--){
                 actual->hijos[i] = actual->hijos[i-1];
@@ -107,12 +112,13 @@ void insertar(nodoArbolA *nodos, par nuevo, int indiceAct, int *cantidadNodo, bo
             (*cantidadNodo)++;
             //e)
             actual->k++ ;
+            (*contadorIOs)++;
             //g)
             if(nuevo.llave<=result.mediano.llave){
-                insertar(nodos, nuevo, indiceHijo, cantidadNodo, false);
+                insertar(nodos, nuevo, indiceHijo, cantidadNodo, false, contadorIOs);
             }
             else{
-                insertar(nodos, nuevo, *cantidadNodo-1, cantidadNodo, false);
+                insertar(nodos, nuevo, *cantidadNodo-1, cantidadNodo, false, contadorIOs);
             }
             free(result.izq);
             free(result.der);
@@ -120,14 +126,16 @@ void insertar(nodoArbolA *nodos, par nuevo, int indiceAct, int *cantidadNodo, bo
     }
     else if(esRaiz){ //caso de que es raiz
         if(actual->k<340){ //caso no lleno
-            insertar(nodos, nuevo, indiceAct, cantidadNodo, false);
+            insertar(nodos, nuevo, indiceAct, cantidadNodo, false, contadorIOs);
         }
         else{ //caso lleno
             resSplit result = split(actual);
 
             nodos[*cantidadNodo] = *result.izq;
+            (*contadorIOs)++;
             (*cantidadNodo)++;
             nodos[*cantidadNodo] = *result.der;
+            (*contadorIOs)++;
             (*cantidadNodo)++;
 
             nodoArbolA *nuevaRaiz = malloc(sizeof(nodoArbolA));
@@ -140,12 +148,13 @@ void insertar(nodoArbolA *nodos, par nuevo, int indiceAct, int *cantidadNodo, bo
             nuevaRaiz->padding = 0;
 
             nodos[0] = *nuevaRaiz;
+            (*contadorIOs)++;
 
             if(nuevo.llave<=result.mediano.llave){
-                insertar(nodos, nuevo, *cantidadNodo-2, cantidadNodo, false);
+                insertar(nodos, nuevo, *cantidadNodo-2, cantidadNodo, false, contadorIOs);
             }
             else{
-                insertar(nodos, nuevo, *cantidadNodo-1, cantidadNodo, false);
+                insertar(nodos, nuevo, *cantidadNodo-1, cantidadNodo, false,contadorIOs);
             }
             free(result.izq);
             free(result.der);
@@ -177,8 +186,9 @@ lista *unir(lista *uno, lista *dos){
     return nueva;
 }
 
-lista *busqueda_por_rango(nodoArbolA *nodos, int indiceAct, int desde, int hasta){
+lista *busqueda_por_rango(nodoArbolA *nodos, int indiceAct, int desde, int hasta, int *contadorIOs){
     nodoArbolA *actual = &nodos[indiceAct];
+    (*contadorIOs)++;
     lista *list = NULL;
     if(actual->es_interno==0){//hoja
         for(int i=0; i<actual->k; i++){
@@ -198,14 +208,14 @@ lista *busqueda_por_rango(nodoArbolA *nodos, int indiceAct, int desde, int hasta
         }
         for(int i=0; i<=actual->k; i++){
             if((i==0 ||hasta>actual->llaves_valores[i-1].llave) && (i==actual->k || desde<=actual->llaves_valores[i].llave)){
-                list = unir(list, busqueda_por_rango(nodos,actual->hijos[i],desde,hasta));
+                list = unir(list, busqueda_por_rango(nodos,actual->hijos[i],desde,hasta, contadorIOs));
             }
         }
         return list;
     }
 }
 
-nodoArbolA *crearArbol(par *pares, int n, int *cantidadNodos, int capacidad){
+nodoArbolA *crearArbol(par *pares, int n, int *cantidadNodos, int capacidad, int *contadorIOs){
     nodoArbolA *nodos = malloc(capacidad * sizeof(nodoArbolA));
 
     nodos[0].es_interno = 0;
@@ -214,7 +224,7 @@ nodoArbolA *crearArbol(par *pares, int n, int *cantidadNodos, int capacidad){
     *cantidadNodos = 1;
 
     for(int i = 0; i<n; i++){
-        insertar(nodos, pares[i], 0, cantidadNodos, true);
+        insertar(nodos, pares[i], 0, cantidadNodos, true, contadorIOs);
     }
     return nodos;
 }
