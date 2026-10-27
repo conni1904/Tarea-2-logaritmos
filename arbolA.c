@@ -3,7 +3,7 @@
 
 
 /**
- * @brief Par que almacena el costo asociado a un nodo
+ * @brief Par llave-costo almacenado en el arbol B
  */
 typedef struct par{
     int llave;
@@ -11,7 +11,7 @@ typedef struct par{
 }par;
 
 /**
- * @brief 
+ * @brief Nodo del arbol B de tamaño fijo de 4096 bytes
  */
 typedef struct nodoArbolA{ //4096 bytes
     int es_interno; //1 o 0
@@ -21,12 +21,21 @@ typedef struct nodoArbolA{ //4096 bytes
     int padding;
 }nodoArbolA;
 
+/**
+ * @brief Resultado de hacer split a un arbol B
+ */
 typedef struct resSplit{
     nodoArbolA *izq;
     nodoArbolA *der;
     par mediano;
 }resSplit;
 
+/**
+ * @brief Divide un nodo lleno en dos nodos y obtiene su mediana
+ * 
+ * @param nodo puntero al nodo que se dividira
+ * @return Estructura con el nodo izquierdo, derecho y la mediana
+ */
 resSplit split(nodoArbolA *nodo){
     resSplit retorno;
 
@@ -63,6 +72,16 @@ resSplit split(nodoArbolA *nodo){
     return retorno;
 }
 
+/**
+ * @brief Inserta un par llave-valor a un arbol B
+ * 
+ * @param nodos Arreglo de nodos
+ * @param nuevo Par llave-valor que se desea insertar
+ * @param indiceAct Indice del nodo actual dentro del arreglo
+ * @param cantidadNodo Puntero a la cantidad de nodos del arbol
+ * @param esRaiz Indica si el nodo actual es raiz
+ * @param contadorIOs Puntero al contador de I/Os
+ */
 void insertar(nodoArbolA *nodos, par nuevo, int indiceAct, int *cantidadNodo, bool esRaiz, int * contadorIOs){
     nodoArbolA *actual = &nodos[indiceAct];
     (*contadorIOs)++;
@@ -162,11 +181,21 @@ void insertar(nodoArbolA *nodos, par nuevo, int indiceAct, int *cantidadNodo, bo
     }
 }
 
+/**
+ * @brief Nodo de una lista enlazada de pares llave-valor
+ */
 typedef struct lista{
     par valor;
     struct lista *sig;
 }lista;
 
+/**
+ * @brief Agrega un par al inicio de la lista
+ * 
+ * @param list Lista donde se va agregar el nuevo par
+ * @param nuevo Par que se quiere agregar a la lista
+ * @return Puntero al inicio de la lista actualizada.
+ */
 lista *agregar(lista *list, par nuevo){
     lista *nueva_lista = malloc(sizeof(lista));
     nueva_lista->valor = nuevo;
@@ -174,6 +203,13 @@ lista *agregar(lista *list, par nuevo){
     return nueva_lista;
 }
 
+/**
+ * @brief Une dos listas
+ * 
+ * @param uno primera lista que se quiere unir
+ * @param dos segunda lista que se quiere unir
+ * @return Puntero al inicio de la lista resultante
+ */
 lista *unir(lista *uno, lista *dos){
     if(uno==NULL){
         return dos;
@@ -186,6 +222,16 @@ lista *unir(lista *uno, lista *dos){
     return nueva;
 }
 
+/**
+ * @brief Busca los pares cuyas llaves pertenezcan al rango
+ * 
+ * @param nodos Arreglo de nodos
+ * @param indiceAct Indice del nodo en el que se buscara
+ * @param desde Limite inferior del rango
+ * @param hasta Limite superior del rango
+ * @param contadorIOs Puntero al contador de I/Os
+ * @return lista enlazada de los pares encontrados
+ */
 lista *busqueda_por_rango(nodoArbolA *nodos, int indiceAct, int desde, int hasta, int *contadorIOs){
     nodoArbolA *actual = &nodos[indiceAct];
     (*contadorIOs)++;
@@ -215,6 +261,16 @@ lista *busqueda_por_rango(nodoArbolA *nodos, int indiceAct, int desde, int hasta
     }
 }
 
+/**
+ * @brief Crea un arbol e inserta los pares llave-valores recibidos
+ * 
+ * @param pares Arreglo de pares llave-valor a insertar
+ * @param n cantidad de pares a insertar
+ * @param cantidadNodos Puntero donde se guardan la cantidad de nodos del arbol
+ * @param capacidad Capacidad maxima del arreglo de nodos
+ * @param contadorIOs Puntero al contador de I/Os
+ * @return Puntero al arreglo de nodos del arbol
+ */
 nodoArbolA *crearArbol(par *pares, int n, int *cantidadNodos, int capacidad, int *contadorIOs){
     nodoArbolA *nodos = malloc(capacidad * sizeof(nodoArbolA));
 
